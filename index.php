@@ -4,14 +4,14 @@ error_reporting(E_ALL ^ E_WARNING);
 function findAndCompare(){
 	$site1=$_POST['site1'];
 	$site2=$_POST['site2'];
-	$html = file_get_contents('http://www.instilla.it/');
-	$html2 = file_get_contents('http://www.cresceredigitale.it/');
+	$html1 = file_get_contents($site1);
+	$html2 = file_get_contents($site2);
 
 	// Create DOM from URL or file
 	$linksSiteFirst=[];
 	$linksSiteSecond=[];
 	$dom = new DOMDocument;
-	$dom->loadHTML($html);
+	$dom->loadHTML($html1);
 	$xpath = new DOMXPath($dom);
 	$nodes = $xpath->query('//a/@href');
 	foreach($nodes as $href) {
