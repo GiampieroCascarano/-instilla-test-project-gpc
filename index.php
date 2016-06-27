@@ -9,20 +9,37 @@ function findAndCompare(){
 
 	// Create DOM from URL or file
 	$linksSiteFirst=[];
-	$linksSiteSecond=[];
 	$dom = new DOMDocument;
 	$dom->loadHTML($html1);
 	$xpath = new DOMXPath($dom);
 	$nodes = $xpath->query('//a/@href');
 	foreach($nodes as $href) {
-		$linksSiteFirst[]=$href->nodeValue;
+		$url=$href->nodeValue;
+		$html=file_get_contents($url);
+		$dom = new DOMDocument;
+		$dom->loadHTML($html);
+		$xpath = new DOMXPath($dom);
+		$title = @$xpath->query('//title')->item(0)->nodeValue;
+		$linksSiteFirst[]=[
+			'url'=>$url,
+			'title'=>$title
+		];
 	}
-
+	$linksSiteSecond=[];
 	$dom->loadHTML($html2);
 	$xpath = new DOMXPath($dom);
 	$nodes = $xpath->query('//a/@href');
 	foreach($nodes as $href) {
-		$linksSiteSecond[]=$href->nodeValue;
+		$url=$href->nodeValue;
+		$html=file_get_contents($url);
+		$dom = new DOMDocument;
+		$dom->loadHTML($html);
+		$xpath = new DOMXPath($dom);
+		$title = $xpath->query('//title')->item(0)->nodeValue;
+		$linksSiteSecond[]=[
+			'url'=>$url,
+			'title'=>$title
+		];
 	}  
 
 	$result=[];
@@ -31,13 +48,13 @@ function findAndCompare(){
 		$somiglianza=-1;
 		for ($j=0; $j < count($linksSiteSecond); $j++) { 
 			//trova massima somiglianza
-			similar_text($linksSiteFirst[$i], $linksSiteSecond[$j], $perc);
+			similar_text($linksSiteFirst[$i]['title'], $linksSiteSecond[$j]['title'], $perc);
 			if($perc>$somiglianza){
 				$somiglianza=$perc;
 				$posTemp=$j;
 			}
 		}
-		$result[]= array($linksSiteFirst[$i],$linksSiteSecond[$posTemp],$somiglianza);
+		$result[]= array($linksSiteFirst[$i]['url'],$linksSiteSecond[$posTemp]['url'],$somiglianza);
 
 	}
 
