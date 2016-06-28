@@ -1,79 +1,26 @@
 <?php 
 
 error_reporting(E_ALL ^ E_WARNING);
+
 function findAndCompare(){
 	$site1=$_POST['site1'];
 	$site2=$_POST['site2'];
-	$html1 = file_get_contents($site1);
-	$html2 = file_get_contents($site2);
 
-	// Create DOM from URL or file
-	$linksSiteFirst=[];
-	$dom = new DOMDocument;
-	$dom->loadHTML($html1);
-	$xpath = new DOMXPath($dom);
-	$nodes = $xpath->query('//a/@href');
-	foreach($nodes as $href) {
-		$url=$href->nodeValue;
-		$html=file_get_contents($url);
-		$dom = new DOMDocument;
-		$dom->loadHTML($html);
-		$xpath = new DOMXPath($dom);
-		$title = @$xpath->query('//title')->item(0)->nodeValue;
-		$linksSiteFirst[]=[
-			'url'=>$url,
-			'title'=>$title
-		];
-	}
-	$linksSiteSecond=[];
-	$dom->loadHTML($html2);
-	$xpath = new DOMXPath($dom);
-	$nodes = $xpath->query('//a/@href');
-	foreach($nodes as $href) {
-		$url=$href->nodeValue;
-		$html=file_get_contents($url);
-		$dom = new DOMDocument;
-		$dom->loadHTML($html);
-		$xpath = new DOMXPath($dom);
-		$title = $xpath->query('//title')->item(0)->nodeValue;
-		$linksSiteSecond[]=[
-			'url'=>$url,
-			'title'=>$title
-		];
-	}  
+	$xpathFirst=getDomXPathFromLink($site1);//ricavi insieme di nodi che costituiscono la pagina
 
-	$result=[];
-	for($i = 0; $i < count($linksSiteFirst); $i++){
-		$posTemp=-1;
-		$somiglianza=-1;
-		for ($j=0; $j < count($linksSiteSecond); $j++) { 
-			//trova massima somiglianza
-			similar_text($linksSiteFirst[$i]['title'], $linksSiteSecond[$j]['title'], $perc);
-			if($perc>$somiglianza){
-				$somiglianza=$perc;
-				$posTemp=$j;
-			}
-		}
-		$result[]= array($linksSiteFirst[$i]['url'],$linksSiteSecond[$posTemp]['url'],$somiglianza);
+	$linksSiteFirst=getArrayWithUrlAndTitle($xpathFirst);//estrapoli titolo della pagina e relativo link e li inserisci in un array
+	
+	$xpathSecond = getDomXPathFromLink($site2);
 
-	}
+	$linksSiteSecond=getArrayWithUrlAndTitle($xpathSecond);
 
-	// echo "<pre>";
-	// print_r($result);
-	// echo "</pre>";
-	$filename = 'file';
-	$filepath = $filename.".csv";
-	$fp = fopen($filepath, 'w');
+	$result=compareTwoSitesWithSimilarField($linksSiteFirst,$linksSiteSecond,"url");//applica il confronto similare fra i titoli o fra gli url
+	
+	$name = 'file';
+	$path = $name.".csv";
 
-	foreach ($result as $fields) {
-	    fputcsv($fp, $fields);
-	}
-	fclose($fp);
+	createCSVFromResult($name,$path,$result);
 
-	header('Content-Type: application/octet-stream');
-	header('Content-Disposition: attachment; filename="' . $filename .'.csv"');
-	header('Content-Length: ' . filesize($filepath)); 
-	echo readfile($filepath);
 } 
 	if(isset($_POST["site2"])){
 		findAndCompare();
@@ -97,3 +44,67 @@ function findAndCompare(){
 	
 </body>
 </html>
+
+
+<?php 
+
+
+function getDomXPathFromLink($link){
+	$html = file_get_contents($link);
+	$dom = new DOMDocument;
+	$dom->loadHTML($html);
+	return new DOMXPath($dom);
+}
+
+function getArrayWithUrlAndTitle($DOMXPath){
+	$linksSite=[];
+
+	$nodes = $DOMXPath->query('//a/@href');
+	foreach($nodes as $href) {
+		$url=$href->nodeValue;
+		$DOMXPath = getDomXPathFromLink($url);
+		$title = @$DOMXPath->query('//title')->item(0)->nodeValue;
+		$linksSite[]=[
+			'url'=>$url,
+			'title'=>$title
+		];
+	}
+	return $linksSite;
+
+}
+function compareTwoSitesWithSimilarField($first,$second,$field){
+	$res=[];
+
+	for($i = 0; $i < count($first); $i++){
+		$posTemp=-1;
+		$somiglianza=-1;
+		for ($j=0; $j < count($second); $j++) { 
+			//trova massima somiglianza
+			similar_text($first[$i]["$field"], $second[$j]["$field"], $perc);
+			if($perc>$somiglianza){
+				$somiglianza=$perc;
+				$posTemp=$j;
+			}
+		}
+		$res[]= array($first[$i]['url'],$second[$posTemp]['url'],$somiglianza);
+	}
+
+return $res;
+}
+
+function createCSVFromResult($filename,$filepath,$result){
+	
+	$fp = fopen($filepath, 'w');
+
+	foreach ($result as $fields) {
+	    fputcsv($fp, $fields);
+	}
+	fclose($fp);
+
+	header('Content-Type: application/octet-stream');
+	header('Content-Disposition: attachment; filename="' . $filename .'.csv"');
+	header('Content-Length: ' . filesize($filepath)); 
+	echo readfile($filepath);
+}
+
+?>
