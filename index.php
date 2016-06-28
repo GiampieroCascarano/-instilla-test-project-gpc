@@ -1,31 +1,15 @@
 <?php 
 
-error_reporting(E_ALL ^ E_WARNING);
+error_reporting(E_ALL ^ E_WARNING); // necessario per evitare stampe di warning
 
-function findAndCompare(){
-	$site1=$_POST['site1'];
-	$site2=$_POST['site2'];
+	$areSetSites=isset($_POST["site1"]) && isset($_POST["site2"]);
+	$areNotEmpty= ( (! empty($_POST["site1"]) ) && (! empty($_POST["site2"])) );
 
-	$xpathFirst=getDomXPathFromLink($site1);//ricavi insieme di nodi che costituiscono la pagina
-
-	$linksSiteFirst=getArrayWithUrlAndTitle($xpathFirst);//estrapoli titolo della pagina e relativo link e li inserisci in un array
-	
-	$xpathSecond = getDomXPathFromLink($site2);
-
-	$linksSiteSecond=getArrayWithUrlAndTitle($xpathSecond);
-
-	$result=compareTwoSitesWithSimilarField($linksSiteFirst,$linksSiteSecond,"url");//applica il confronto similare fra i titoli o fra gli url
-	
-	$name = 'file';
-	$path = $name.".csv";
-
-	createCSVFromResult($name,$path,$result);
-
-} 
-	if(isset($_POST["site2"])){
+	if( $areSetSites && $areNotEmpty ){
 		findAndCompare();
 	die();
 	}
+
 ?>
 <html>
 	<head>
@@ -48,6 +32,26 @@ function findAndCompare(){
 
 <?php 
 
+function findAndCompare(){
+	$site1=$_POST['site1'];
+	$site2=$_POST['site2'];
+
+	$xpathFirst=getDomXPathFromLink($site1);//ricavi insieme di nodi che costituiscono la pagina
+
+	$linksSiteFirst=getArrayWithUrlAndTitle($xpathFirst);//estrapoli titolo della pagina e relativo link e li inserisci in un array
+	
+	$xpathSecond = getDomXPathFromLink($site2);
+
+	$linksSiteSecond=getArrayWithUrlAndTitle($xpathSecond);
+
+	$result=compareTwoSitesWithSimilarField($linksSiteFirst,$linksSiteSecond,"title");//applica il confronto similare fra i titoli o fra gli url
+	
+	$name = 'file';
+	$path = $name.".csv";
+
+	createCSVFromResult($name,$path,$result);
+
+} 	
 
 function getDomXPathFromLink($link){
 	$html = file_get_contents($link);
